@@ -81,7 +81,7 @@ public class HelloBot extends AbilityBot{
 	public Reply detectUnculturalWords() {
 		Consumer<Update> action = upd -> silent.send("givno", upd.getMessage().getChatId());
 		
-		return Reply.of(action, CultureWods.TEXT_WITH_WORDS);
+		return Reply.of(action, ConditionalFlag.CONTAINS_OBSCENE_WORDS);
 	}
 
 	public Ability playWithMe() {
