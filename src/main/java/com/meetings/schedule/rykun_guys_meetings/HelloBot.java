@@ -9,6 +9,7 @@ import java.util.function.Predicate;
 
 import org.telegram.abilitybots.api.bot.AbilityBot;
 import org.telegram.abilitybots.api.objects.Ability;
+import org.telegram.abilitybots.api.objects.Ability.AbilityBuilder;
 import org.telegram.abilitybots.api.objects.Flag;
 import org.telegram.abilitybots.api.objects.Locality;
 import org.telegram.abilitybots.api.objects.Privacy;
@@ -71,16 +72,15 @@ public class HelloBot extends AbilityBot{
 	    
 	    
 	}
-	
+
 	public Reply sayGivnoOnAnyMessage() {
 		Consumer<Update> action = upd -> silent.send("givno", upd.getMessage().getChatId());
 		return Reply.of(action, Flag.PHOTO);
 	}
 	
 	
-	public Reply detectUnculturalWords() {
-		Consumer<Update> action = upd -> silent.send("givno", upd.getMessage().getChatId());
-		
+	public Reply detectObsceneWords() {
+		Consumer<Update> action = upd -> silent.send(ConditionalFlag.getRandomReplyToObsceneWord(), upd.getMessage().getChatId());
 		return Reply.of(action, ConditionalFlag.CONTAINS_OBSCENE_WORDS);
 	}
 

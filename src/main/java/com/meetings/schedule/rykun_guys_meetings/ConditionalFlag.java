@@ -2,8 +2,10 @@ package com.meetings.schedule.rykun_guys_meetings;
 
 import static java.util.Objects.nonNull;
 
-import java.util.Set;
+import java.util.List;
+import java.util.Random;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import org.telegram.telegrambots.api.objects.Update;
 
@@ -11,8 +13,9 @@ public enum ConditionalFlag implements Predicate<Update> {
 
 	CONTAINS_OBSCENE_WORDS(upd -> upd.getMessage().hasText() && containsObsceneWord(upd));
 	private Predicate<Update> predicate;
-	private static Set<String> obscenceWordsSet = LoadBotTextContent.getInstance().getObscenceWordsSet();
-
+	private static List<String> obscenceWordsList;
+	private static List<String> obscenceRepliesToWordsList;
+	
 	ConditionalFlag(Predicate<Update> predicate) {
 	    this.predicate = predicate;
 	  }
@@ -23,8 +26,16 @@ public enum ConditionalFlag implements Predicate<Update> {
 	}
 	
 	private static boolean containsObsceneWord(Update upd) {
-		obscenceWordsSet = LoadBotTextContent.getInstance().getObscenceWordsSet();
-		return obscenceWordsSet.contains(upd.getMessage().getText());
+		obscenceWordsList = LoadBotTextContent.getInstance().getObscenceWordsSet();
+		return !obscenceWordsList.stream()
+				.filter(elem -> upd.getMessage().getText().contains(elem))
+				.collect(Collectors.toList())
+				.isEmpty();
 	}
 
+	public static String getRandomReplyToObsceneWord() {
+		obscenceRepliesToWordsList = LoadBotTextContent.getInstance().getRepliesToObscenceWords();
+		return obscenceRepliesToWordsList.get(new Random().nextInt(obscenceRepliesToWordsList.size()));
+	}
+	
 }
