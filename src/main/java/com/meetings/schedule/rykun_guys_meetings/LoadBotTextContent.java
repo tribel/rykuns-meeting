@@ -2,15 +2,16 @@ package com.meetings.schedule.rykun_guys_meetings;
 
 import java.io.FileInputStream;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
-import java.util.Set;
 
 public class LoadBotTextContent {
 
-	private static final String OBSCENCE_WORDS = "obscence_words_list";
-	private static final String OBSCENCE_REPLY = "reply_to_obscence_words";
+	public static final String OBSCENCE_WORDS = "obscence_words_list";
+	public static final String OBSCENCE_REPLY = "reply_to_obscence_words";
+	public static final String PHOTO_REPLY = "reply_to_photo";
+	public static final String LAUGH_LIST = "laugh_list";
+	public static final String LAUGH_REPLY = "reply_to_laugh";
 	
 	private static LoadBotTextContent instance;
 	private static Properties properties;
@@ -30,12 +31,8 @@ public class LoadBotTextContent {
 		return instance;
 	}
 
-	
-	public List<String> getObscenceWordsSet() {
-		return Arrays.asList(properties.getProperty(OBSCENCE_WORDS).split(","));
+	public List<String> getTextTokens(String targetName) {
+		return Arrays.asList(properties.getProperty(targetName).split(","));
 	}
 	
-	public List<String> getRepliesToObscenceWords() {
-		return  Arrays.asList(properties.getProperty(OBSCENCE_REPLY).split(","));
-	}
 }

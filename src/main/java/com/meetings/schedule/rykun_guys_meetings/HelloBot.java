@@ -1,6 +1,5 @@
 package com.meetings.schedule.rykun_guys_meetings;
 
-import static java.util.Objects.nonNull;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,7 +8,6 @@ import java.util.function.Predicate;
 
 import org.telegram.abilitybots.api.bot.AbilityBot;
 import org.telegram.abilitybots.api.objects.Ability;
-import org.telegram.abilitybots.api.objects.Ability.AbilityBuilder;
 import org.telegram.abilitybots.api.objects.Flag;
 import org.telegram.abilitybots.api.objects.Locality;
 import org.telegram.abilitybots.api.objects.Privacy;
@@ -19,7 +17,6 @@ import org.telegram.telegrambots.TelegramBotsApi;
 import org.telegram.telegrambots.api.methods.send.SendMessage;
 import org.telegram.telegrambots.api.objects.Message;
 import org.telegram.telegrambots.api.objects.Update;
-import org.telegram.telegrambots.api.objects.replykeyboard.ForceReplyKeyboard;
 import org.telegram.telegrambots.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import org.telegram.telegrambots.api.objects.replykeyboard.buttons.KeyboardRow;
 import org.telegram.telegrambots.exceptions.TelegramApiException;
@@ -73,15 +70,28 @@ public class HelloBot extends AbilityBot{
 	    
 	}
 
-	public Reply sayGivnoOnAnyMessage() {
-		Consumer<Update> action = upd -> silent.send("givno", upd.getMessage().getChatId());
+	public Reply detectPhoto() {
+		Consumer<Update> action = upd -> silent.send(
+				ConditionalFlag.getRandomReplyFromTargetList(
+						LoadBotTextContent.getInstance().getTextTokens(LoadBotTextContent.PHOTO_REPLY)),
+						upd.getMessage().getChatId());
 		return Reply.of(action, Flag.PHOTO);
 	}
 	
-	
 	public Reply detectObsceneWords() {
-		Consumer<Update> action = upd -> silent.send(ConditionalFlag.getRandomReplyToObsceneWord(), upd.getMessage().getChatId());
+		Consumer<Update> action = upd -> silent.send(
+				ConditionalFlag.getRandomReplyFromTargetList(
+						LoadBotTextContent.getInstance().getTextTokens(LoadBotTextContent.OBSCENCE_REPLY)),
+						upd.getMessage().getChatId());
 		return Reply.of(action, ConditionalFlag.CONTAINS_OBSCENE_WORDS);
+	}
+	
+	public Reply detectLaugh() {
+		Consumer<Update> action = upd -> silent.send(
+				ConditionalFlag.getRandomReplyFromTargetList(
+						LoadBotTextContent.getInstance().getTextTokens(LoadBotTextContent.LAUGH_REPLY)),
+						upd.getMessage().getChatId());
+		return Reply.of(action, ConditionalFlag.CONTAINS_LAUGH);
 	}
 
 	public Ability playWithMe() {
@@ -188,22 +198,5 @@ public class HelloBot extends AbilityBot{
 			System.out.println(e.getMessage());
 			
 		}
-
 	}
-}
-
-
-enum CultureWods  implements Predicate<Update> {
-	TEXT_WITH_WORDS(upd -> upd.getMessage().hasText() && upd.getMessage().getText().contains("meg"));
-	 private final Predicate<Update> predicate;
-
-	  CultureWods(Predicate<Update> predicate) {
-	    this.predicate = predicate;
-	  }
-
-	@Override
-	public boolean test(Update update) {
-		 return nonNull(update) && predicate.test(update);
-	}
-	
 }
