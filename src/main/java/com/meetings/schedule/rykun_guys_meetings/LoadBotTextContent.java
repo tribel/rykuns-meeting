@@ -12,6 +12,8 @@ public class LoadBotTextContent {
 	public static final String PHOTO_REPLY = "reply_to_photo";
 	public static final String LAUGH_LIST = "laugh_list";
 	public static final String LAUGH_REPLY = "reply_to_laugh";
+	public static final String INFO_REPLY = "info_reply";
+	public static final String MEET_REPLY = "meet_reply";
 	
 	private static LoadBotTextContent instance;
 	private static Properties properties;
@@ -33,6 +35,10 @@ public class LoadBotTextContent {
 
 	public List<String> getTextTokens(String targetName) {
 		return Arrays.asList(properties.getProperty(targetName).split(","));
+	}
+	
+	public String getTargetText(String name) {
+		return properties.getProperty(name);
 	}
 	
 }

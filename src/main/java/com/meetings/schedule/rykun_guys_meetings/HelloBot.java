@@ -45,23 +45,19 @@ public class HelloBot extends AbilityBot{
 	public Ability sayHelloWorld() {
 	    return Ability
 	              .builder()
-	              .name("hello")
-	              .info("says hello world!")
+	              .name("info")
+	              .info("full information about rykun chat bot")
 	              .locality(Locality.ALL)
 	              .privacy(Privacy.PUBLIC)
-	              .action(ctx -> silent.send("Hello world!", ctx.chatId()))
-	              .post(ctx -> silent.send("Bye world!", ctx.chatId()))
+	              .action(ctx -> silent.send(LoadBotTextContent.getInstance().getTargetText(LoadBotTextContent.INFO_REPLY), ctx.chatId()))
 	              .build();
-	    
-	    
 	}
-	
 	
 	public Ability calculateNearestDate() {
 	    return Ability
 	              .builder()
-	              .name("встреча")
-	              .info("когда собересмся")
+	              .name("meeting")
+	              .info("going to meet")
 	              .locality(Locality.ALL)
 	              .privacy(Privacy.PUBLIC)
 	              .action(ctx -> onCurrentChoosen(ctx.chatId()))
