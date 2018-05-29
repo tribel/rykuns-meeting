@@ -5,7 +5,6 @@ import static java.util.Objects.nonNull;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import org.telegram.telegrambots.api.objects.Update;
 
@@ -18,8 +17,6 @@ public enum ConditionalFlag implements Predicate<Update> {
 			LoadBotTextContent.getInstance().getTextTokens(LoadBotTextContent.LAUGH_LIST)));
 
 	private Predicate<Update> predicate;
-	private static List<String> obscenceRepliesToWordsList;
-
 	ConditionalFlag(Predicate<Update> predicate) {
 		this.predicate = predicate;
 	}
@@ -30,8 +27,7 @@ public enum ConditionalFlag implements Predicate<Update> {
 	}
 
 	private static boolean containsWordsFromTargetList(Update upd, List<String> targetList) {
-		return !targetList.stream().filter(elem -> upd.getMessage().getText().contains(elem))
-				.collect(Collectors.toList()).isEmpty();
+		return targetList.stream().anyMatch(elem -> upd.getMessage().getText().toLowerCase().contains(elem));
 	}
 
 	public static String getRandomReplyFromTargetList(List<String> targetList) {

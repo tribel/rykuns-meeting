@@ -1,10 +1,12 @@
 package com.meetings.schedule.rykun_guys_meetings;
 
 
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import org.telegram.abilitybots.api.bot.AbilityBot;
 import org.telegram.abilitybots.api.objects.Ability;
@@ -26,6 +28,7 @@ public class HelloBot extends AbilityBot{
 
 	public static String BOT_TOKEN = "589560901:AAEENuvndSE60Y6iDjm9vWQTuMEOjzGL2Lc";
 	public static String BOT_USERNAME = "@RykunsMeetingBot";
+	public List<LocalDate> dates;
 
 	 public HelloBot() {
 	    super(BOT_TOKEN, BOT_USERNAME);
@@ -53,17 +56,28 @@ public class HelloBot extends AbilityBot{
 	              .build();
 	}
 	
-	public Ability calculateNearestDate() {
+	public Ability createNewMeetingDate() {
+		return Ability
+				.builder()
+				.name("newMeeting")
+				.info("Create new meeting")
+				.locality(Locality.ALL)
+	            .privacy(Privacy.PUBLIC)
+				.action(ctx -> createNewMeeting(ctx.chatId()))
+				.reply(upd -> treatTheChoosenDate(upd))
+				.build();
+	}
+	
+	public Ability chooseConvenientDate() {
 	    return Ability
 	              .builder()
 	              .name("meeting")
 	              .info("going to meet")
 	              .locality(Locality.ALL)
 	              .privacy(Privacy.PUBLIC)
-	              .action(ctx -> onCurrentChoosen(ctx.chatId()))
+	              .action(ctx -> chooseConvenientDate(ctx.chatId()))
+	              .reply(upd -> treatTheChoosenDate(upd))
 	              .build();
-	    
-	    
 	}
 
 	public Reply detectPhoto() {
@@ -90,98 +104,79 @@ public class HelloBot extends AbilityBot{
 		return Reply.of(action, ConditionalFlag.CONTAINS_LAUGH);
 	}
 
-	public Ability playWithMe() {
-	    String playMessage = "Play with me!";
+	
+	private void createNewMeeting(Long chatId) {
+		if (dates != null && !dates.isEmpty()) {
+			silent.send("go ahead write dates", chatId);
+			dates = new ArrayList<>();
+		}
+	}
+	
+	private void chooseConvenientDate(Long chatId) {
+		if (dates != null && !dates.isEmpty()) {
+			silent.send("go ahead", chatId);
+			chooseAppropriateDate(chatId);
+		} else {
+			silent.send("go ahead write date", chatId);
+			
+		}
+	}
+	
+    private void chooseAppropriateDate(Long chatId) {
+        SendMessage sendMessage = new SendMessage();
+        sendMessage.enableMarkdown(true);
 
-	    return Ability.builder()
-	        .name("play")
-	        .info("Do you want to play with me?")
-	        .privacy(Privacy.PUBLIC)
-	        .locality(Locality.ALL)
-	        .input(0)
-	        .action(ctx -> silent.forceReply(playMessage, ctx.chatId()))
-	        // The signature of a reply is -> (Consumer<Update> action, Predicate<Update>... conditions)
-	        // So, we  first declare the action that takes an update (NOT A MESSAGECONTEXT) like the action above
-	        // The reason of that is that a reply can be so versatile depending on the message, context becomes an inefficient wrapping
-	        .reply(upd -> {
-	              // Prints to console
-	              System.out.println("I'm in a reply!");
-	              // Sends message
-	              silent.send("It's been nice playing with you!", upd.getMessage().getChatId());
-	            },
-	            // Now we start declaring conditions, MESSAGE is a member of the enum Flag class
-	            // That class contains out-of-the-box predicates for your replies!
-	            // MESSAGE means that the update must have a message
-	            // This is imported statically, Flag.MESSAGE
-	            Flag.MESSAGE,
-	            // REPLY means that the update must be a reply, Flag.REPLY
-	            Flag.REPLY,
-	            // A new predicate user-defined
-	            // The reply must be to the bot
-	            isReplyToBot(),
-	            // If we process similar logic in other abilities, then we have to make this reply specific to this message
-	            // The reply is to the playMessage
-	            isReplyToMessage(playMessage)
-	        )
-	        // You can add more replies by calling .reply(...)
-	        .build();
-	  }
-	  
-	    private Predicate<Update> isReplyToMessage(String message) {
-	      return upd -> {
-	        Message reply = upd.getMessage().getReplyToMessage();
-	        return reply.hasText() && reply.getText().equalsIgnoreCase(message);
-	      };
-	    }
-	  
-	    private Predicate<Update> isReplyToBot() {
-	      return upd -> upd.getMessage().getReplyToMessage().getFrom().getUserName().equalsIgnoreCase(getBotUsername());
-	    }
+        ReplyKeyboardMarkup replyKeyboardMarkup = getRecentsKeyboard();
+        sendMessage.setReplyMarkup(replyKeyboardMarkup);
+        sendMessage.setChatId(chatId);
+        sendMessage.setText("Enter the description of set date");
 
-	    
-	    private  void onCurrentChoosen(Long chatId) {
-	        SendMessage sendMessage = new SendMessage();
-	        sendMessage.enableMarkdown(true);
-
-	        ReplyKeyboardMarkup replyKeyboardMarkup = getRecentsKeyboard();
-	        sendMessage.setReplyMarkup(replyKeyboardMarkup);
-	        sendMessage.setChatId(chatId);
-	        if (replyKeyboardMarkup.getKeyboard().size() > 3) {
-	            sendMessage.setText("HELLLLOOOOOOO!");
-	        } else {
-	            sendMessage.setText("AHAHAHAHAHAHAHAH");
-	        }
-
-	       
-	       try {
+	    try {
 			sendMessage(sendMessage);
 		} catch (TelegramApiException e) {
-			System.out.println("@@@@@@KEYBOARD OOO");
 			e.printStackTrace();
 		}
-	    }
-	    
-	    private static ReplyKeyboardMarkup getRecentsKeyboard() {
-	        ReplyKeyboardMarkup replyKeyboardMarkup = new ReplyKeyboardMarkup();
-	        replyKeyboardMarkup.setSelective(true);
-	        replyKeyboardMarkup.setResizeKeyboard(true);
-	        replyKeyboardMarkup.setOneTimeKeyboard(true);
+    }
+    
+    private ReplyKeyboardMarkup getRecentsKeyboard() {
+        ReplyKeyboardMarkup replyKeyboardMarkup = new ReplyKeyboardMarkup();
+        replyKeyboardMarkup.setSelective(true);
+        replyKeyboardMarkup.setResizeKeyboard(true);
+        replyKeyboardMarkup.setOneTimeKeyboard(true);
 
-	        List<KeyboardRow> keyboard = new ArrayList<>();
-	        var weatherList = List.of("a","b","c","d");
-	        for (String recentWeather : weatherList) {
-	            KeyboardRow row = new KeyboardRow();
-	            row.add(recentWeather);
-	            keyboard.add(row);
-	        }
+        List<KeyboardRow> keyboard = new ArrayList<>();
+        var weatherList = dates.stream().map(LocalDate::toString).collect(Collectors.toList());
+        for (String recentWeather : weatherList) {
+            KeyboardRow row = new KeyboardRow();
+            row.add(recentWeather);
+            keyboard.add(row);
+        }
 
-	        KeyboardRow row = new KeyboardRow();
-	        keyboard.add(row);
+        KeyboardRow row = new KeyboardRow();
+        keyboard.add(row);
 
-	        replyKeyboardMarkup.setKeyboard(keyboard);
+        replyKeyboardMarkup.setKeyboard(keyboard);
 
-	        return replyKeyboardMarkup;
-	    }
+        return replyKeyboardMarkup;
+    }
+
+    private void treatTheChoosenDate(Update update) {
+    	Message message = update.getMessage();
+    	if(message.hasText() && messageIsRelevantDate(message.getText())) {
+    		silent.send("Spasibo", message.getChatId());
+    	}
+    }
+    
+    private boolean messageIsRelevantDate(String message) {
+    	try {
+    		LocalDate selectedDate = LocalDate.parse(message);
+    		return dates.stream().anyMatch(date -> date.isEqual(selectedDate));
+    	} catch (DateTimeParseException e) {
+			System.out.println("!!!!!!!IT IS NO A DATE!!!!");
+			//add message like , its not a date to logg
+		}
+    	return false;
+    }
 	
 	public static void main(String[] args) {
 		
