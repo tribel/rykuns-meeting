@@ -15,6 +15,7 @@ public enum ConditionalFlag implements Predicate<Update> {
 	
 	CONTAINS_LAUGH(upd -> upd.getMessage().hasText() && containsWordsFromTargetList(upd,
 			LoadBotTextContent.getInstance().getTextTokens(LoadBotTextContent.LAUGH_LIST)));
+	
 
 	private Predicate<Update> predicate;
 	ConditionalFlag(Predicate<Update> predicate) {

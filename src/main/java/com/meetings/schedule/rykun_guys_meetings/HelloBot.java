@@ -4,7 +4,9 @@ package com.meetings.schedule.rykun_guys_meetings;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -61,25 +63,30 @@ public class HelloBot extends AbilityBot{
 				.builder()
 				.name("newMeeting")
 				.info("Create new meeting")
+			    .input(0)
 				.locality(Locality.ALL)
 	            .privacy(Privacy.PUBLIC)
 				.action(ctx -> createNewMeeting(ctx.chatId()))
-				.reply(upd -> treatTheChoosenDate(upd))
 				.build();
 	}
-	
+	/*
 	public Ability chooseConvenientDate() {
 	    return Ability
 	              .builder()
 	              .name("meeting")
 	              .info("going to meet")
 	              .locality(Locality.ALL)
-	              .privacy(Privacy.PUBLIC)
+	              .privacy(Privacy.PUBLIC) 
 	              .action(ctx -> chooseConvenientDate(ctx.chatId()))
 	              .reply(upd -> treatTheChoosenDate(upd))
 	              .build();
-	}
+	}*/
 
+	public Reply detectDate() {
+		Consumer<Update> action = upd -> silent.send("I have detect the date", upd.getMessage().getChatId());
+		return Reply.of(action, upd -> upd.getMessage().hasText(), upd -> isLineContainAnyDate(upd));
+	}
+	
 	public Reply detectPhoto() {
 		Consumer<Update> action = upd -> silent.send(
 				ConditionalFlag.getRandomReplyFromTargetList(
@@ -106,7 +113,7 @@ public class HelloBot extends AbilityBot{
 
 	
 	private void createNewMeeting(Long chatId) {
-		if (dates != null && !dates.isEmpty()) {
+		if (dates == null || dates.isEmpty()) {
 			silent.send("go ahead write dates", chatId);
 			dates = new ArrayList<>();
 		}
@@ -160,17 +167,28 @@ public class HelloBot extends AbilityBot{
         return replyKeyboardMarkup;
     }
 
-    private void treatTheChoosenDate(Update update) {
+    private boolean treatTheChoosenDate(Update update) {
     	Message message = update.getMessage();
+    	
+    	silent.send("in the block", message.getChatId());
     	if(message.hasText() && messageIsRelevantDate(message.getText())) {
     		silent.send("Spasibo", message.getChatId());
     	}
+    	
+    	return true;
+    }
+    
+    private boolean isLineContainAnyDate(Update upd) {
+    	String[] tokens = upd.getMessage().getText().split(",");
+    	return Arrays.stream(tokens).anyMatch(this::messageIsRelevantDate);
     }
     
     private boolean messageIsRelevantDate(String message) {
     	try {
-    		LocalDate selectedDate = LocalDate.parse(message);
-    		return dates.stream().anyMatch(date -> date.isEqual(selectedDate));
+    		if(message.matches("^\\d{4}\\-(0?[1-9]|1[012])\\-(0?[1-9]|[12][0-9]|3[01])$")) {
+    			LocalDate selectedDate = LocalDate.parse(message);
+    			return dates.stream().anyMatch(date -> date.isEqual(selectedDate));
+    		}
     	} catch (DateTimeParseException e) {
 			System.out.println("!!!!!!!IT IS NO A DATE!!!!");
 			//add message like , its not a date to logg
@@ -184,6 +202,7 @@ public class HelloBot extends AbilityBot{
 		var telegramBotApi = new TelegramBotsApi();
 		try {
 			telegramBotApi.registerBot(new HelloBot());
+			//telegramBotApi.registerBot(new LaughHandler(BOT_TOKEN, BOT_USERNAME, 327156282));
 		} catch (TelegramApiRequestException e) {
 			e.printStackTrace();
 			System.out.println(e.getMessage());
