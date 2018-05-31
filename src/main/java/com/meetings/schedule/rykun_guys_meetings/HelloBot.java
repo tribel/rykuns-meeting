@@ -28,9 +28,11 @@ import org.telegram.telegrambots.exceptions.TelegramApiRequestException;
 
 public class HelloBot extends AbilityBot{
 
+	private static final String DATE_REG_EX = "^\\d{4}\\-(0?[1-9]|1[012])\\-(0?[1-9]|[12][0-9]|3[01])$";
 	public static String BOT_TOKEN = "589560901:AAEENuvndSE60Y6iDjm9vWQTuMEOjzGL2Lc";
 	public static String BOT_USERNAME = "@RykunsMeetingBot";
 	public List<LocalDate> dates;
+	public boolean waitingForDate;
 
 	 public HelloBot() {
 	    super(BOT_TOKEN, BOT_USERNAME);
@@ -69,7 +71,7 @@ public class HelloBot extends AbilityBot{
 				.action(ctx -> createNewMeeting(ctx.chatId()))
 				.build();
 	}
-	/*
+	
 	public Ability chooseConvenientDate() {
 	    return Ability
 	              .builder()
@@ -77,14 +79,14 @@ public class HelloBot extends AbilityBot{
 	              .info("going to meet")
 	              .locality(Locality.ALL)
 	              .privacy(Privacy.PUBLIC) 
-	              .action(ctx -> chooseConvenientDate(ctx.chatId()))
-	              .reply(upd -> treatTheChoosenDate(upd))
+	              .action(ctx -> silent.send("Create the meeting first", ctx.chatId()))
+	              .reply(upd -> pollForTheDate(upd.getMessage().getChatId()), upd -> dates != null && !dates.isEmpty(), upd -> upd.getMessage().getText().contains("/meeting"))
 	              .build();
-	}*/
+	}
 
 	public Reply detectDate() {
 		Consumer<Update> action = upd -> silent.send("I have detect the date", upd.getMessage().getChatId());
-		return Reply.of(action, upd -> upd.getMessage().hasText(), upd -> isLineContainAnyDate(upd));
+		return Reply.of(action, upd -> upd.getMessage().hasText(),upd -> waitingForDate, upd -> dates != null, upd -> isLineContainAnyDate(upd));
 	}
 	
 	public Reply detectPhoto() {
@@ -116,17 +118,16 @@ public class HelloBot extends AbilityBot{
 		if (dates == null || dates.isEmpty()) {
 			silent.send("go ahead write dates", chatId);
 			dates = new ArrayList<>();
+			waitingForDate = true;
 		}
 	}
 	
-	private void chooseConvenientDate(Long chatId) {
-		if (dates != null && !dates.isEmpty()) {
-			silent.send("go ahead", chatId);
-			chooseAppropriateDate(chatId);
-		} else {
-			silent.send("go ahead write date", chatId);
-			
-		}
+	private void pollForTheDate(Long chatId) {
+		silent.send("ENTER THE DATE", chatId);
+	}
+	
+	private void afteDateDetection() {
+		
 	}
 	
     private void chooseAppropriateDate(Long chatId) {
@@ -167,28 +168,34 @@ public class HelloBot extends AbilityBot{
         return replyKeyboardMarkup;
     }
 
-    private boolean treatTheChoosenDate(Update update) {
-    	Message message = update.getMessage();
-    	
-    	silent.send("in the block", message.getChatId());
-    	if(message.hasText() && messageIsRelevantDate(message.getText())) {
-    		silent.send("Spasibo", message.getChatId());
-    	}
-    	
-    	return true;
-    }
-    
+
     private boolean isLineContainAnyDate(Update upd) {
-    	String[] tokens = upd.getMessage().getText().split(",");
-    	return Arrays.stream(tokens).anyMatch(this::messageIsRelevantDate);
+		if(dates.isEmpty()) {
+			return isMessageContainsRelevantDates(upd);
+			
+		} else {
+			return checkIfDateExistInDatesList(upd);
+		}
+
     }
     
-    private boolean messageIsRelevantDate(String message) {
+    private boolean checkIfDateExistInDatesList(Update update) {
+    	String date = update.getMessage().getText().split(",")[0];
+    	if(date.matches(DATE_REG_EX)) {
+			LocalDate selectedDate = LocalDate.parse(date);
+			return dates.stream().anyMatch(dt -> dt.isEqual(selectedDate));
+		}
+    	return false;
+    }
+    
+    private boolean isMessageContainsRelevantDates(Update update) {
+    	String[] tokens = update.getMessage().getText().split(",");
     	try {
-    		if(message.matches("^\\d{4}\\-(0?[1-9]|1[012])\\-(0?[1-9]|[12][0-9]|3[01])$")) {
-    			LocalDate selectedDate = LocalDate.parse(message);
-    			return dates.stream().anyMatch(date -> date.isEqual(selectedDate));
-    		}
+    		Arrays.stream(tokens).filter(dt -> dt.matches(DATE_REG_EX))
+    							 .map(LocalDate::parse)
+    							 .forEach(dates::add);
+    		
+    		return dates.isEmpty() ? false : true;
     	} catch (DateTimeParseException e) {
 			System.out.println("!!!!!!!IT IS NO A DATE!!!!");
 			//add message like , its not a date to logg
